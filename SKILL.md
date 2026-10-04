@@ -24,10 +24,10 @@ You do not launch capture. The user enters it with **⌘E**.
 
 1. `touch "$HOME/.cache/lulu-clip/arm"`
 2. Say: 请按 ⌘E，拖动鼠标框选.
-3. Wait for a new PNG under `$HOME/.cache/lulu-clip`.
+3. `$SKILL_DIR/scripts/wait-png.sh` — polls the cache about once a second; prints the new PNG path and exits. Block until it exits. Do not vacant-sleep. Do not AwaitShell with no command.
 4. `Read` that path.
 
-If no new file appears, `rm -f "$HOME/.cache/lulu-clip/arm"` and stop.
+If the script exits 2 (`NO_NEW_FILE`), `rm -f "$HOME/.cache/lulu-clip/arm"` and stop.
 
 Listen enables **⌘E** only while that `arm` file exists. After the key fires, listen deletes `arm`.
 
