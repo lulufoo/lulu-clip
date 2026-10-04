@@ -2,8 +2,8 @@
 name: lulu-clip
 description: >-
   Capture a macOS screen region for the current conversation.
-  Use when: lulu-clip, screenshot, 截图, 截取, clip a window, capture OpenCode,
-  look at a running app UI, 看一下这个软件的界面.
+  Use when: lulu-clip, screenshot, capture a region, clip a window, capture OpenCode,
+  look at a running app UI.
 ---
 
 # lulu-clip
@@ -23,11 +23,12 @@ If listen is down, run `$SKILL_DIR/scripts/install-listen.sh`.
 You do not launch capture. The user enters it with **⌘E**.
 
 1. `touch "$HOME/.cache/lulu-clip/arm"`
-2. Say: 请按 ⌘E，拖动鼠标框选.
-3. `$SKILL_DIR/scripts/wait-png.sh` — polls the cache about once a second; prints the new PNG path and exits. Block until it exits. Do not vacant-sleep. Do not AwaitShell with no command.
+2. Say: Press ⌘E, then drag to select a region.
+3. `$SKILL_DIR/scripts/wait-png.sh` — polls the cache about once a second. Prints the new PNG path and exits 0. If this attempt is cancelled, exits 3. Block until it exits. Do not vacant-sleep. Do not AwaitShell with no command.
 4. `Read` that path.
 
 If the script exits 2 (`NO_NEW_FILE`), `rm -f "$HOME/.cache/lulu-clip/arm"` and stop.
+If the script exits 3 (`CANCELLED`), stop.
 
 Listen enables **⌘E** only while that `arm` file exists. After the key fires, listen deletes `arm`.
 
