@@ -1,6 +1,6 @@
 <h1 align="center">Lulu Clip</h1>
 
-<p align="center"><b>Clip a macOS screen region for the agent. Press ⌘E, then drag.</b></p>
+<p align="center"><b>Improve collaboration efficiency: faster clarification, faster context injection.</b></p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License" align="absmiddle"></a>
@@ -8,7 +8,7 @@
 
 ---
 
-The agent stays in the current chat. It arms **⌘E**. You press it and drag. LuluClip writes a PNG. Grant **Screen & System Audio Recording** to **LuluClip** only.
+When working with an agent, the critical context is often outside the current conversation. For some problems and situations, explaining them in words is both inefficient and laborious. Lulu Clip improves collaboration efficiency: it assists problem clarification, and it injects context more efficiently.
 
 ## Quick start
 
@@ -23,7 +23,7 @@ Grant **Screen & System Audio Recording** to **LuluClip**. Then in chat:
 /lulu-clip
 ```
 
-Press **⌘E** and drag. After capture, ⌘E is released.
+The agent stays in the current chat and arms **⌘E**. Press it and drag a region. LuluClip writes a PNG. After capture, ⌘E is released. Grant the permission to **LuluClip** only.
 
 ## Skill
 
