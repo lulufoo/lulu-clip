@@ -22,13 +22,14 @@ Install path and listen readiness.
 
 One region. Do not launch the picker. Do not `touch` `arm`.
 
-1. Say: Press ⌘E, then drag to select a region.
+1. Say: Press ⌘E, drag to select a region, optionally mark it up, then press Enter (完成).
 2. Run `$SKILL_DIR/scripts/wait-png.sh` only. Block until it exits. Do not vacant-sleep. Do not AwaitShell with no command.
 3. `Read` the path it prints.
 
 ## Failure
 
-1. Exit 2 (`NO_NEW_FILE`) or 3 (`CANCELLED`): stop.
+1. Exit 3 (`CANCELLED`): tell the user the capture was cancelled, then stop and wait for their next request. Do not retry or re-arm on your own.
+2. Exit 2 (`NO_NEW_FILE`): tell the user no capture arrived before the timeout, then stop and wait for their next request.
 
 ## After capture
 
