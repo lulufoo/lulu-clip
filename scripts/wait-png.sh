@@ -21,7 +21,11 @@ fi
 
 touch "$ARM"
 
-for _ in $(seq 1 "$TIMEOUT"); do
+# Only *.png counts; LuluClip writes <name>.png.part then renames.
+# After "edit begin" (user is annotating on screen) the timeout no longer applies.
+editing=0
+elapsed=0
+while (( editing || elapsed < TIMEOUT )); do
   for f in "$DIR"/*.png(N); do
     if [[ -z ${seen[$f]+x} ]]; then
       echo "$f"
@@ -38,9 +42,13 @@ for _ in $(seq 1 "$TIMEOUT"); do
         echo "CANCELLED" >&2
         exit 3
       fi
+      if [[ "$new" == *"edit begin"* ]]; then
+        editing=1
+      fi
     fi
   fi
   sleep 1
+  (( ++elapsed ))
 done
 rm -f "$ARM"
 echo "NO_NEW_FILE" >&2

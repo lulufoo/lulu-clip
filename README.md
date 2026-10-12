@@ -23,7 +23,9 @@ Grant **Screen & System Audio Recording** to **LuluClip**. Then in chat:
 /lulu-clip
 ```
 
-The agent stays in the current chat and arms **⌘E**. Press it and drag a region. LuluClip writes a PNG. After capture, ⌘E is released. Grant the permission to **LuluClip** only.
+The agent stays in the current chat and arms **⌘E**. Press it and drag a region on the live screen. The region locks into an edit step: draw lines (L) or boxes (B) on top of the live screen, with pixel measurements; Shift snaps horizontal/vertical (square for boxes); ⌘Z undoes. Press Enter or click 完成 to capture the region with your marks; Esc/取消 cancels. LuluClip writes a PNG only on Done (`.png.part`, then rename). While editing, `listen.log` gets `edit begin` and `wait-png.sh` stops its timeout. After capture, ⌘E is released.
+
+LuluClip also lives in the menu bar (viewfinder icon): **⌘⇧E** or 截图 starts a capture any time, without an agent. Done saves the PNG to the out dir and copies it to the clipboard; Esc just closes. 打开截图文件夹 opens the out dir. Grant the permission to **LuluClip** only.
 
 ## Skill
 
