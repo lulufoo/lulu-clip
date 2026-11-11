@@ -22,12 +22,10 @@ enum Listen {
     }
 
     static func run(outDir: URL) {
-        if !Thread.isMainThread {
-            DispatchQueue.main.sync {
-                run(outDir: outDir)
-            }
-            return
-        }
+        // Must be the main thread WITHOUT occupying the main queue: NSApp.run inside a queue
+        // block (DispatchQueue.main.sync) keeps the queue busy forever and starves every
+        // main-queue async mechanism afterwards. main() guarantees the main thread.
+        precondition(Thread.isMainThread, "Listen.run owns the process main thread; call it from LuluClipCLI.main()")
         self.outDir = outDir
         try? FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
         try? writeListenPid()

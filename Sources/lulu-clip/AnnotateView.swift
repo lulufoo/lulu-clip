@@ -167,7 +167,17 @@ final class OverlayView: NSView, NSTextFieldDelegate {
         toolbar = AnnotateToolbar(host: self)
         window?.invalidateCursorRects(for: self)
         refresh()
+        becomeKey()
         window?.makeFirstResponder(self)
+    }
+
+    /// Editing and shortcuts need the overlay to be the key window. ⌘⇧E can fire while another app
+    /// is frontmost; activation may still be settling, leaving the window merely ordered front.
+    private func becomeKey() {
+        guard let win = window, !win.isKeyWindow else { return }
+        debugLog("overlay not key (appActive=\(NSApp.isActive)) → activate+makeKey")
+        NSApp.activate(ignoringOtherApps: true)
+        win.makeKey()
     }
 
     func refresh() {
@@ -255,6 +265,7 @@ final class OverlayView: NSView, NSTextFieldDelegate {
         session.selected = nil
         addSubview(f)
         resizeTextField()
+        becomeKey()
         window?.makeFirstResponder(f)
         f.currentEditor()?.selectedRange = NSRange(location: (shape.text as NSString).length, length: 0)
         debugLog("text begin index=\(index.map(String.init) ?? "new")")
@@ -269,7 +280,10 @@ final class OverlayView: NSView, NSTextFieldDelegate {
         f.frame = CGRect(x: shape.a.x - 2, y: shape.a.y, width: w, height: f.frame.height)
     }
 
-    func controlTextDidChange(_ obj: Notification) { resizeTextField() }
+    func controlTextDidChange(_ obj: Notification) {
+        debugLog("text input reached field len=\(textField?.stringValue.count ?? -1)")
+        resizeTextField()
+    }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy sel: Selector) -> Bool {
         if sel == #selector(NSResponder.insertNewline(_:)) { commitText(); return true }
@@ -333,6 +347,8 @@ final class OverlayView: NSView, NSTextFieldDelegate {
             else if g.y == 0 { NSCursor.resizeLeftRight.set() }
             else if g.x == 0 { NSCursor.resizeUpDown.set() }
             else { NSCursor.crosshair.set() }
+        } else if session.tool == .text, sel.contains(p) {
+            NSCursor.iBeam.set()
         } else if topmostMarkup(session.shapes, at: p, tolerance: hitTolerance) != nil {
             NSCursor.openHand.set()
         } else if sel.contains(p) {
@@ -349,10 +365,26 @@ final class OverlayView: NSView, NSTextFieldDelegate {
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
         if session.editing {
-            debugLog("mouseDown edit p=\(p) active=\(isActive) inSel=\(session.selection?.contains(p) ?? false) tool=\(session.tool)")
+            debugLog("mouseDown edit p=\(p) active=\(isActive) inSel=\(session.selection?.contains(p) ?? false) tool=\(session.tool) key=\(window?.isKeyWindow ?? false) appActive=\(NSApp.isActive) click=\(event.clickCount)")
             guard isActive, let sel = session.selection else { return }
-            if textField != nil { commitText(); return }
+            if textField != nil {
+                commitText()
+                // Text tool: the committing click keeps going and starts the next input.
+                if session.tool != .text { return }
+            }
             dragBefore = session.shapes
+            if session.tool == .text {
+                // Aa mode: every click lands in text input — click a text to edit it, anywhere else start one.
+                if let i = topmostMarkup(session.shapes, at: p, tolerance: hitTolerance),
+                   session.shapes[i].kind == .text {
+                    beginText(session.shapes[i], index: i)
+                } else if sel.contains(p) {
+                    session.selected = nil
+                    let size = Palette.fontSizes[session.style.fontIndex]
+                    beginText(newShape(.text, at: CGPoint(x: p.x, y: p.y - size * 0.6)), index: nil)
+                }
+                return
+            }
             if let h = handleHit(p), let i = session.selected {
                 drag = .resize(h, session.shapes[i])
                 return
@@ -384,9 +416,7 @@ final class OverlayView: NSView, NSTextFieldDelegate {
                 beginFrameDrag(.move, p, sel)
                 return
             case .text:
-                let size = Palette.fontSizes[session.style.fontIndex]
-                beginText(newShape(.text, at: CGPoint(x: p.x, y: p.y - size * 0.6)), index: nil)
-                return
+                break // unreachable: every text-tool click enters input above
             case .line:
                 drag = .draw(p); session.draft = newShape(.line, at: p)
             case .arrow:
