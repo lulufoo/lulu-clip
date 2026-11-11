@@ -167,7 +167,17 @@ final class OverlayView: NSView, NSTextFieldDelegate {
         toolbar = AnnotateToolbar(host: self)
         window?.invalidateCursorRects(for: self)
         refresh()
+        becomeKey()
         window?.makeFirstResponder(self)
+    }
+
+    /// Editing and shortcuts need the overlay to be the key window. ⌘⇧E can fire while another app
+    /// is frontmost; activation may still be settling, leaving the window merely ordered front.
+    private func becomeKey() {
+        guard let win = window, !win.isKeyWindow else { return }
+        debugLog("overlay not key (appActive=\(NSApp.isActive)) → activate+makeKey")
+        NSApp.activate(ignoringOtherApps: true)
+        win.makeKey()
     }
 
     func refresh() {
@@ -255,6 +265,7 @@ final class OverlayView: NSView, NSTextFieldDelegate {
         session.selected = nil
         addSubview(f)
         resizeTextField()
+        becomeKey()
         window?.makeFirstResponder(f)
         f.currentEditor()?.selectedRange = NSRange(location: (shape.text as NSString).length, length: 0)
         debugLog("text begin index=\(index.map(String.init) ?? "new")")
@@ -269,7 +280,10 @@ final class OverlayView: NSView, NSTextFieldDelegate {
         f.frame = CGRect(x: shape.a.x - 2, y: shape.a.y, width: w, height: f.frame.height)
     }
 
-    func controlTextDidChange(_ obj: Notification) { resizeTextField() }
+    func controlTextDidChange(_ obj: Notification) {
+        debugLog("text input reached field len=\(textField?.stringValue.count ?? -1)")
+        resizeTextField()
+    }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy sel: Selector) -> Bool {
         if sel == #selector(NSResponder.insertNewline(_:)) { commitText(); return true }
@@ -351,7 +365,7 @@ final class OverlayView: NSView, NSTextFieldDelegate {
     override func mouseDown(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
         if session.editing {
-            debugLog("mouseDown edit p=\(p) active=\(isActive) inSel=\(session.selection?.contains(p) ?? false) tool=\(session.tool)")
+            debugLog("mouseDown edit p=\(p) active=\(isActive) inSel=\(session.selection?.contains(p) ?? false) tool=\(session.tool) key=\(window?.isKeyWindow ?? false) appActive=\(NSApp.isActive) click=\(event.clickCount)")
             guard isActive, let sel = session.selection else { return }
             if textField != nil {
                 commitText()

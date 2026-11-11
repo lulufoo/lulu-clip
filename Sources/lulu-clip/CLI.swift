@@ -3,9 +3,14 @@ import LuluClipCore
 
 @main
 struct LuluClipCLI {
-    static func main() async {
+    /// Synchronous on purpose: the runtime starts a sync `main` directly on the process main
+    /// thread, so NSApp.run never sits inside a main-queue block. An async main hands the main
+    /// thread to the queue drain, and `DispatchQueue.main.sync { NSApp.run() }` then keeps the
+    /// main queue occupied forever — main-queue async work (AppKit text setup included) never
+    /// drains again, which broke inline text editing.
+    static func main() {
         do {
-            try await run(Array(CommandLine.arguments.dropFirst()))
+            try run(Array(CommandLine.arguments.dropFirst()))
         } catch let error as ClipError {
             fputs((error.localizedDescription) + "\n", stderr)
             exit(Int32(exitCode(error)))
@@ -15,7 +20,7 @@ struct LuluClipCLI {
         }
     }
 
-    private static func run(_ args: [String]) async throws {
+    private static func run(_ args: [String]) throws {
         guard let command = args.first else { throw ClipError.usage }
         switch command {
         case "listen":
@@ -32,7 +37,7 @@ struct LuluClipCLI {
                     themes = [(String(format: "%06x", v), v)]
                 }
                 let picked = themes
-                let outs = try await MainActor.run {
+                let outs = try MainActor.assumeIsolated {
                     try AnnotateToolbar.renderThemeCompare(dir: dir, themes: picked.map { ($0.0, AnnotateTheme.hex($0.1)) })
                 }
                 outs.forEach { print($0.path) }
@@ -40,7 +45,7 @@ struct LuluClipCLI {
             }
             for (name, dark) in [("preview-light.png", false), ("preview-dark.png", true)] {
                 let out = dir.appendingPathComponent(name)
-                try await MainActor.run { try AnnotateToolbar.renderPreview(to: out, dark: dark) }
+                try MainActor.assumeIsolated { try AnnotateToolbar.renderPreview(to: out, dark: dark) }
                 print(out.path)
             }
         case "-h", "--help", "help":
