@@ -333,6 +333,8 @@ final class OverlayView: NSView, NSTextFieldDelegate {
             else if g.y == 0 { NSCursor.resizeLeftRight.set() }
             else if g.x == 0 { NSCursor.resizeUpDown.set() }
             else { NSCursor.crosshair.set() }
+        } else if session.tool == .text, sel.contains(p) {
+            NSCursor.iBeam.set()
         } else if topmostMarkup(session.shapes, at: p, tolerance: hitTolerance) != nil {
             NSCursor.openHand.set()
         } else if sel.contains(p) {
@@ -351,8 +353,24 @@ final class OverlayView: NSView, NSTextFieldDelegate {
         if session.editing {
             debugLog("mouseDown edit p=\(p) active=\(isActive) inSel=\(session.selection?.contains(p) ?? false) tool=\(session.tool)")
             guard isActive, let sel = session.selection else { return }
-            if textField != nil { commitText(); return }
+            if textField != nil {
+                commitText()
+                // Text tool: the committing click keeps going and starts the next input.
+                if session.tool != .text { return }
+            }
             dragBefore = session.shapes
+            if session.tool == .text {
+                // Aa mode: every click lands in text input — click a text to edit it, anywhere else start one.
+                if let i = topmostMarkup(session.shapes, at: p, tolerance: hitTolerance),
+                   session.shapes[i].kind == .text {
+                    beginText(session.shapes[i], index: i)
+                } else if sel.contains(p) {
+                    session.selected = nil
+                    let size = Palette.fontSizes[session.style.fontIndex]
+                    beginText(newShape(.text, at: CGPoint(x: p.x, y: p.y - size * 0.6)), index: nil)
+                }
+                return
+            }
             if let h = handleHit(p), let i = session.selected {
                 drag = .resize(h, session.shapes[i])
                 return
@@ -384,9 +402,7 @@ final class OverlayView: NSView, NSTextFieldDelegate {
                 beginFrameDrag(.move, p, sel)
                 return
             case .text:
-                let size = Palette.fontSizes[session.style.fontIndex]
-                beginText(newShape(.text, at: CGPoint(x: p.x, y: p.y - size * 0.6)), index: nil)
-                return
+                break // unreachable: every text-tool click enters input above
             case .line:
                 drag = .draw(p); session.draft = newShape(.line, at: p)
             case .arrow:
